@@ -1,0 +1,124 @@
+import com.android.build.api.dsl.androidLibrary
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+
+plugins {
+    alias(libs.plugins.android.kmp.library)
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlinx.serialization)
+    id("com.vanniktech.maven.publish") version "0.34.0"
+    id("org.jetbrains.dokka") version "2.0.0"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+kotlin {
+    jvmToolchain(17)
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
+    @Suppress("UnstableApiUsage")
+    androidLibrary {
+        namespace = "echo.common"
+        compileSdk = 36
+        minSdk = 24
+    }
+    jvm()
+
+    val xcf = XCFramework()
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "common"
+            isStatic = true
+            xcf.add(this)
+        }
+    }
+
+    sourceSets {
+        commonMain {
+            dependencies {
+                api(libs.bundles.kotlinx)
+            }
+        }
+
+        androidMain {
+            dependencies {
+                api(libs.okhttp)
+                api(libs.protobuf.java)
+            }
+        }
+
+        val jvmMain by getting {
+            dependencies {
+                api(libs.okhttp)
+                api(libs.protobuf.java)
+            }
+        }
+
+        val iosMain by creating {
+            dependsOn(commonMain.get())
+        }
+        val iosX64Main by getting { dependsOn(iosMain) }
+        val iosArm64Main by getting { dependsOn(iosMain) }
+        val iosSimulatorArm64Main by getting { dependsOn(iosMain) }
+    }
+}
+
+// build.gradle.kts
+
+mavenPublishing {
+    publishToMavenCentral(true)
+    signAllPublications()
+
+    coordinates("dev.brahmkshatriya.echo", "common", "1.0.0")
+
+    pom {
+        name = "Eko common library"
+        description = "A common library for eko extensions."
+        inceptionYear = "2025"
+        url = "https://github.com/ESV43/echo-main"
+        licenses {
+            license {
+                name = "Unabandon Public License"
+                url = "https://github.com/ESV43/echo-main/blob/main/LICENSE.md"
+                distribution = "https://github.com/ESV43/echo-main/blob/main/LICENSE.md"
+            }
+        }
+        developers {
+            developer {
+                id = "brahmkshatriya"
+                name = "Shivam"
+                url = "https://github.com/brahmkshatriya/"
+            }
+        }
+        scm {
+            url = "https://github.com/ESV43/echo-main/"
+            connection = "scm:git:git://github.com/ESV43/echo-main.git"
+            developerConnection = "scm:git:ssh://git@github.com/ESV43/echo-main.git"
+        }
+    }
+}
+
+dokka {
+    moduleName.set("common")
+    moduleVersion.set("1.0")
+    dokkaSourceSets.commonMain {
+        includes.from("README.md")
+        sourceLink {
+            localDirectory.set(file("src/main/java"))
+            remoteUrl("https://github.com/ESV43/echo-main/tree/main/common/src/main/java")
+            remoteLineSuffix.set("#L")
+        }
+    }
+    pluginsConfiguration.html {
+        customStyleSheets.from("styles.css")
+        footerMessage.set("made by <a style=\"color: inherit; text-decoration: underline;\" href=\"https://github.com/brahmkshatriya\">@brahmkshatriya</a>")
+    }
+}
