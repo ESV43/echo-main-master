@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# APKs are ZIP archives. Treat them as binary so Git never rewrites their bytes.
+*.apk binary

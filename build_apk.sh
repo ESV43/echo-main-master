@@ -17,8 +17,8 @@ if ! type -p java > /dev/null; then
 fi
 
 JAVA_VER=$(java -version 2>&1 | head -n 1 | cut -d'"' -f2 | cut -d'.' -f1)
-if [ "$JAVA_VER" -lt 17 ]; then
-    echo -e "${RED}Error: Java 17 or higher is required. Found version $JAVA_VER.${NC}"
+if [ "$JAVA_VER" != "17" ]; then
+    echo -e "${RED}Error: This project requires JDK 17. Found version $JAVA_VER.${NC}"
     exit 1
 fi
 
