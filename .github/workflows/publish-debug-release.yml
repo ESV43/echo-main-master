@@ -1,0 +1,39 @@
+name: Publish Debug APK Release
+
+on:
+  workflow_run:
+    workflows: [Build Debug APK]
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish-debug-release:
+    name: Publish debug APK prerelease
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download the APK from the completed build
+        uses: actions/download-artifact@v4
+        with:
+          name: debug-apk-${{ github.event.workflow_run.head_sha }}
+          path: release
+          run-id: ${{ github.event.workflow_run.id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+
+      - name: Publish GitHub prerelease with generated notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: debug-${{ github.event.workflow_run.head_sha }}
+          TITLE: Debug APK (${{ github.event.workflow_run.head_sha }})
+        run: |
+          gh release create "$TAG" release/*.apk \
+            --title "$TITLE" \
+            --generate-notes \
+            --prerelease
